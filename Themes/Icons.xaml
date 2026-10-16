@@ -1,0 +1,53 @@
+<!--
+    Icons.xaml
+    ==================================================================
+    介面素材以 pack URI 引用，圖片本身以 Resource 方式編譯進 exe，
+    因此釋出時依舊只有一個可執行檔案，不需要額外的素材目錄。
+    （角色立繪不走這裡，見 Services/PortraitLibrary.cs）
+    素材來源：
+      · 原 WinForms 工程的自繪素材（按鈕、勾選、鎖定、進度條、Logo）
+      · D:\mmtm 遊戲資源庫（羊皮紙底紋）
+      · D:\mmtm 遊戲 UI 貼圖（按鈕水彩底：取遊戲內 button_l_01 系列，
+        與遊戲內「取消 / 領取」按鈕同款；懸停／按下為提亮／壓暗的烘焙變體）
+-->
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+
+    <!-- ===== 版面素材 ===== -->
+    <BitmapImage x:Key="ImgBackground" UriSource="pack://application:,,,/MementoMoriCodeRedeemerWpf;component/Assets/Background_Parchment.png" />
+    <BitmapImage x:Key="ImgLogo" UriSource="pack://application:,,,/MementoMoriCodeRedeemerWpf;component/Assets/MementoMoriLogo.png" />
+    <BitmapImage x:Key="ImgAppIcon" UriSource="pack://application:,,,/MementoMoriCodeRedeemerWpf;component/Assets/AppIcon.ico" />
+
+    <!-- ===== 玩家行狀態圖示 ===== -->
+    <BitmapImage x:Key="ImgLockOn" UriSource="pack://application:,,,/MementoMoriCodeRedeemerWpf;component/Assets/LockOn.png" />
+    <BitmapImage x:Key="ImgLockOff" UriSource="pack://application:,,,/MementoMoriCodeRedeemerWpf;component/Assets/LockOff.png" />
+    <BitmapImage x:Key="ImgSelectionOn" UriSource="pack://application:,,,/MementoMoriCodeRedeemerWpf;component/Assets/SelectionOn.png" />
+    <BitmapImage x:Key="ImgSelectionOff" UriSource="pack://application:,,,/MementoMoriCodeRedeemerWpf;component/Assets/SelectionOff.png" />
+
+    <!-- ===== 進度條皮膚 ===== -->
+    <BitmapImage x:Key="ImgProgressFill" UriSource="pack://application:,,,/MementoMoriCodeRedeemerWpf;component/Assets/ProgressFill.png" />
+
+    <!-- ===== 主／次按鈕水彩底（遊戲同款貼圖） ===== -->
+    <BitmapImage x:Key="ImgButtonPrimary" UriSource="pack://application:,,,/MementoMoriCodeRedeemerWpf;component/Assets/ButtonPrimary.png" />
+    <BitmapImage x:Key="ImgButtonPrimaryHover" UriSource="pack://application:,,,/MementoMoriCodeRedeemerWpf;component/Assets/ButtonPrimaryHover.png" />
+    <BitmapImage x:Key="ImgButtonPrimaryPressed" UriSource="pack://application:,,,/MementoMoriCodeRedeemerWpf;component/Assets/ButtonPrimaryPressed.png" />
+    <BitmapImage x:Key="ImgButtonSecondary" UriSource="pack://application:,,,/MementoMoriCodeRedeemerWpf;component/Assets/ButtonSecondary.png" />
+    <BitmapImage x:Key="ImgButtonSecondaryHover" UriSource="pack://application:,,,/MementoMoriCodeRedeemerWpf;component/Assets/ButtonSecondaryHover.png" />
+    <BitmapImage x:Key="ImgButtonSecondaryPressed" UriSource="pack://application:,,,/MementoMoriCodeRedeemerWpf;component/Assets/ButtonSecondaryPressed.png" />
+    <BitmapImage x:Key="ImgButtonSecondaryHoverWarm" UriSource="pack://application:,,,/MementoMoriCodeRedeemerWpf;component/Assets/ButtonSecondaryHoverWarm.png" />
+
+    <!-- ===== 功能按鈕素材 ===== -->
+    <BitmapImage x:Key="ImgButtonAdd" UriSource="pack://application:,,,/MementoMoriCodeRedeemerWpf;component/Assets/ButtonAdd.png" />
+    <BitmapImage x:Key="ImgButtonEdit" UriSource="pack://application:,,,/MementoMoriCodeRedeemerWpf;component/Assets/ButtonEdit.png" />
+    <BitmapImage x:Key="ImgButtonDelete" UriSource="pack://application:,,,/MementoMoriCodeRedeemerWpf;component/Assets/ButtonDelete.png" />
+    <!-- 全選／取消全選：取自遊戲 toggle_all_on/off，已去掉自帶的外圈——
+         工具條按鈕本身已有圓角底板，再套一圈就是「框套框」。
+         做法：從 67×68 原圖中心取 48×48，再套一個圓形羽化遮罩把方形四角（也就是外圈
+         殘留）抹掉，只留裡層球體。 -->
+    <BitmapImage x:Key="ImgButtonAllOn" UriSource="pack://application:,,,/MementoMoriCodeRedeemerWpf;component/Assets/OrbAllOn.png" />
+    <BitmapImage x:Key="ImgButtonAllOff" UriSource="pack://application:,,,/MementoMoriCodeRedeemerWpf;component/Assets/OrbAllOff.png" />
+    <BitmapImage x:Key="ImgButtonRefresh" UriSource="pack://application:,,,/MementoMoriCodeRedeemerWpf;component/Assets/ButtonRefresh.png" />
+    <BitmapImage x:Key="ImgButtonCopy" UriSource="pack://application:,,,/MementoMoriCodeRedeemerWpf;component/Assets/ButtonCopy.png" />
+    <BitmapImage x:Key="ImgButtonLoadIn" UriSource="pack://application:,,,/MementoMoriCodeRedeemerWpf;component/Assets/ButtonLoadIn.png" />
+
+</ResourceDictionary>

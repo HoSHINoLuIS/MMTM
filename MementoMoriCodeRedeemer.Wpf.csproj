@@ -1,0 +1,26 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net10.0-windows</TargetFramework>
+    <AssemblyName>MementoMoriCodeRedeemerWpf</AssemblyName>
+    <RootNamespace>MementoMoriCodeRedeemer.Wpf</RootNamespace>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <UseWPF>true</UseWPF>
+    <LangVersion>latest</LangVersion>
+    <ApplicationIcon>Assets\AppIcon.ico</ApplicationIcon>
+    <ApplicationManifest>app.manifest</ApplicationManifest>
+    <Version>2.0.0</Version>
+    <Product>MementoMori 虛寶碼自動領取</Product>
+    <AssemblyTitle>MementoMori 虛寶碼自動領取</AssemblyTitle>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Resource Include="Assets\*.png" />
+    <Resource Include="Assets\AppIcon.ico" />
+    <!-- 角色立繪庫：125 張 192×192 PNG，隨 exe 編譯嵌入，由 PortraitLibrary 在執行時按資源名列舉。 -->
+    <EmbeddedResource Include="Assets\Portraits\*.png" />
+  </ItemGroup>
+
+</Project>

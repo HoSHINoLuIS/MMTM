@@ -1,0 +1,492 @@
+<!-- 視窗預設尺寸即最小尺寸：首次執行（或刪掉 settings.json 後）以最小視窗開啟；
+     調整過大小或最大化後由 AppSettingsStore 記住，下次啟動按記憶恢復。
+     最小高度 820 是被內容撐出來的下限：再矮就會把表格與右側編輯欄擠到要滾動。 -->
+<Window x:Class="MementoMoriCodeRedeemer.Wpf.Views.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="MementoMori 虛寶碼自動領取"
+        Icon="pack://application:,,,/MementoMoriCodeRedeemerWpf;component/Assets/AppIcon.ico"
+        Width="1120" Height="820"
+        MinWidth="1120" MinHeight="820"
+        WindowStartupLocation="CenterScreen"
+        Background="{StaticResource PaperBrush}"
+        FontFamily="{StaticResource UiFont}"
+        TextOptions.TextFormattingMode="Display"
+        TextOptions.TextRenderingMode="ClearType"
+        UseLayoutRounding="True"
+        SnapsToDevicePixels="True">
+
+    <Grid>
+        <!-- ============ 0. 背景：羊皮紙底紋 + 一層薄紗 ============ -->
+        <Image Source="{StaticResource ImgBackground}" Stretch="UniformToFill"
+               RenderOptions.BitmapScalingMode="HighQuality" />
+        <Rectangle Fill="#5CFFFFFF" />
+
+        <!-- ============ 1. 主內容 ============ -->
+        <Grid Margin="20,18,20,18">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="3.2*" MinHeight="272" />
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="1*" MinHeight="112" />
+            </Grid.RowDefinitions>
+
+            <!-- ================= 兌換設定 ================= -->
+            <ContentControl Grid.Row="0" Style="{StaticResource CardPanel}" Padding="18,10" Margin="0,0,0,12">
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="Auto" />
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="Auto" />
+                    </Grid.ColumnDefinitions>
+
+                    <StackPanel Grid.Column="0" VerticalAlignment="Center" Margin="0,0,24,0">
+                        <TextBlock Style="{StaticResource CardTitle}" Text="兌換設定" />
+                        <TextBlock Style="{StaticResource CaptionText}" Margin="0,2,0,0"
+                                   Text="選擇伺服器 · 填入虛寶碼" />
+                    </StackPanel>
+
+                    <Grid Grid.Column="1" VerticalAlignment="Center">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto" />
+                            <ColumnDefinition Width="170" />
+                            <ColumnDefinition Width="Auto" />
+                            <ColumnDefinition Width="Auto" />
+                            <ColumnDefinition Width="*" MinWidth="140" />
+                            <ColumnDefinition Width="Auto" />
+                        </Grid.ColumnDefinitions>
+
+                        <TextBlock Grid.Column="0" Style="{StaticResource FieldLabel}" Text="伺服器"
+                                   Margin="0,0,10,0" />
+
+                        <ComboBox Grid.Column="1" x:Name="ServerComboBox"
+                                  Style="{StaticResource WatercolorComboBox}"
+                                  DisplayMemberPath="Name"
+                                  ToolTip="官方 API回傳的可用伺服器列表" />
+
+                        <Button Grid.Column="2" x:Name="RefreshServersButton"
+                                Style="{StaticResource TileButtonChrome}"
+                                Width="38" Height="38" Margin="8,0,0,0"
+                                ToolTip="重新讀取伺服器列表"
+                                Click="RefreshServersButton_Click">
+                            <Image Source="{StaticResource ImgButtonRefresh}" Width="24" Height="24"
+                                   RenderOptions.BitmapScalingMode="HighQuality" />
+                        </Button>
+
+                        <TextBlock Grid.Column="3" Style="{StaticResource FieldLabel}" Text="虛寶碼"
+                                   Margin="24,0,10,0" />
+
+                        <TextBox Grid.Column="4" x:Name="SerialCodeTextBox"
+                                 Style="{StaticResource InputBox}"
+                                 MaxLength="64"
+                                 ToolTip="只能包含半形英文字母與數字" />
+
+                        <CheckBox Grid.Column="5" x:Name="ConfirmOnlyCheckBox"
+                                  Style="{StaticResource WatercolorCheckBox}"
+                                  Content="僅確認不兌換" Margin="20,0,0,0"
+                                  ToolTip="只呼叫確認 API核對玩家ID／暱稱／世界，不實際發放獎勵" />
+                    </Grid>
+
+                    <!-- 名稱圖示：與原版一致，放在設定區右端，點選跳轉官方虛寶碼頁面 -->
+                    <Button Grid.Column="2" x:Name="LogoLinkButton"
+                            Style="{StaticResource LogoLinkButton}"
+                            Margin="26,0,0,0" VerticalAlignment="Center"
+                            ToolTip="跳轉至官方頁面"
+                            Click="LogoLinkButton_Click">
+                        <Image Source="{StaticResource ImgLogo}"
+                               Width="140" Height="60" Stretch="Uniform"
+                               RenderOptions.BitmapScalingMode="HighQuality" />
+                    </Button>
+                </Grid>
+            </ContentControl>
+
+            <!-- ================= 玩家ID內容庫 ================= -->
+            <ContentControl Grid.Row="1" Style="{StaticResource CardPanel}" Padding="18,14">
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="*" />
+                        <RowDefinition Height="Auto" />
+                    </Grid.RowDefinitions>
+
+                    <!-- 卡頭：標題 + 計數 + 搜尋 -->
+                    <Grid Grid.Row="0" Margin="0,0,0,10">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto" />
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="Auto" />
+                        </Grid.ColumnDefinitions>
+
+                        <StackPanel Grid.Column="0" Orientation="Horizontal" VerticalAlignment="Center">
+                            <TextBlock Style="{StaticResource CardTitle}" Text="玩家ID內容庫"
+                                       VerticalAlignment="Center" />
+                            <Border Style="{StaticResource StatChip}"
+                                    Margin="12,0,0,0" VerticalAlignment="Center">
+                                <TextBlock x:Name="PlayerCountText" Style="{StaticResource CaptionText}"
+                                           Text="還沒有玩家ID" VerticalAlignment="Center" />
+                            </Border>
+                        </StackPanel>
+
+                        <!-- 卡片級動作與搜尋框同排：都掛在標題行右端，和「執行日誌」卡片的
+                             「清空日誌」保持同一種位置習慣。
+                             早先它落在下面工具欄行的最右端，正好吊在搜尋框正下方，
+                             看起來像是搜尋框的附屬按鈕，實際又跟搜尋無關。 -->
+                        <Button Grid.Column="1" x:Name="OpenDataFolderButton" Content="開啟資料目錄"
+                                Style="{StaticResource GhostButton}"
+                                Width="118" Height="34" FontSize="12"
+                                Padding="0" Margin="20,0,16,0"
+                                HorizontalAlignment="Right" VerticalAlignment="Center"
+                                ToolTip="在檔案總管中定位 players.json"
+                                Click="OpenDataFolderButton_Click" />
+
+                        <Grid Grid.Column="2" Width="248" VerticalAlignment="Center">
+                            <TextBox x:Name="SearchBox" Style="{StaticResource InputBox}" Height="34"
+                                     ToolTip="按玩家ID、備註或最近結果過濾列表"
+                                     TextChanged="SearchBox_TextChanged" />
+                            <TextBlock Text="搜尋玩家ID / 備註" IsHitTestVisible="False"
+                                       Margin="13,0,0,0" VerticalAlignment="Center"
+                                       FontSize="12.5" Foreground="{StaticResource InkFaintBrush}">
+                                <TextBlock.Style>
+                                    <Style TargetType="TextBlock">
+                                        <Setter Property="Visibility" Value="Collapsed" />
+                                        <Style.Triggers>
+                                            <DataTrigger Binding="{Binding Text, ElementName=SearchBox}" Value="">
+                                                <Setter Property="Visibility" Value="Visible" />
+                                            </DataTrigger>
+                                        </Style.Triggers>
+                                    </Style>
+                                </TextBlock.Style>
+                            </TextBlock>
+                        </Grid>
+                    </Grid>
+
+                    <!-- 列表工具欄：批次勾選與剪貼簿操作 -->
+                    <Grid Grid.Row="1" Margin="0,0,0,10">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto" />
+                            <ColumnDefinition Width="*" />
+                        </Grid.ColumnDefinitions>
+
+                        <StackPanel Grid.Column="0" Orientation="Horizontal">
+                            <Button x:Name="SelectAllButton" Style="{StaticResource TileButtonChrome}"
+                                    Width="38" Height="38" Margin="0,0,4,0"
+                                    ToolTip="勾選當前列表中的全部玩家（有搜尋條件時只作用於可見行）"
+                                    Click="SelectAllButton_Click">
+                                <Image Source="{StaticResource ImgButtonAllOn}" Width="26" Height="26"
+                                       RenderOptions.BitmapScalingMode="HighQuality" />
+                            </Button>
+                            <Button x:Name="ClearSelectionButton" Style="{StaticResource TileButtonChrome}"
+                                    Width="38" Height="38" Margin="0,0,4,0"
+                                    ToolTip="取消勾選當前列表中的全部玩家"
+                                    Click="ClearSelectionButton_Click">
+                                <Image Source="{StaticResource ImgButtonAllOff}" Width="26" Height="26"
+                                       RenderOptions.BitmapScalingMode="HighQuality" />
+                            </Button>
+
+                            <Border Width="1" Background="{StaticResource DividerBrush}"
+                                    Margin="8,3,12,3" />
+
+                            <Button x:Name="ImportClipboardButton" Style="{StaticResource TileButtonChrome}"
+                                    Width="38" Height="38" Margin="0,0,4,0"
+                                    ToolTip="從剪貼簿批次匯入玩家ID，支援「ID + 備註」的表格文字"
+                                    Click="ImportClipboardButton_Click">
+                                <Image Source="{StaticResource ImgButtonLoadIn}" Width="27" Height="24"
+                                       RenderOptions.BitmapScalingMode="HighQuality" />
+                            </Button>
+                            <Button x:Name="ExportClipboardButton" Style="{StaticResource TileButtonChrome}"
+                                    Width="38" Height="38"
+                                    ToolTip="把當前列表複製到剪貼簿，便於備份或分享"
+                                    Click="ExportClipboardButton_Click">
+                                <Image Source="{StaticResource ImgButtonCopy}" Width="24" Height="24"
+                                       RenderOptions.BitmapScalingMode="HighQuality" />
+                            </Button>
+                        </StackPanel>
+
+                        <!-- 提示文字放在彈性列裡：視窗收窄時自動省略，不與左側按鈕搶位置 -->
+                        <TextBlock Grid.Column="1" Style="{StaticResource CaptionText}"
+                                   VerticalAlignment="Center" Margin="16,0,0,0"
+                                   TextTrimming="CharacterEllipsis"
+                                   Text="提示：點行內的鎖與圓點圖示可切換鎖定／勾選狀態，雙擊行可直接編輯" />
+                    </Grid>
+
+                    <!-- 表格 + 編輯側欄 -->
+                    <Grid Grid.Row="2">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="14" />
+                            <ColumnDefinition Width="258" />
+                        </Grid.ColumnDefinitions>
+
+                        <Border Grid.Column="0" Style="{StaticResource SubPanel}" Padding="4,4,2,4">
+                            <DataGrid x:Name="PlayersGrid"
+                                      Style="{StaticResource WatercolorDataGrid}"
+                                      SelectionChanged="PlayersGrid_SelectionChanged"
+                                      MouseDoubleClick="PlayersGrid_MouseDoubleClick">
+                                <DataGrid.Columns>
+                                    <DataGridTemplateColumn Header="鎖定" Width="60"
+                                                            HeaderStyle="{StaticResource WatercolorColumnHeaderCenter}"
+                                                            CellStyle="{StaticResource WatercolorCellTight}">
+                                        <DataGridTemplateColumn.CellTemplate>
+                                            <DataTemplate>
+                                                <Button Style="{StaticResource RowIconButton}"
+                                                        Width="34" Height="34"
+                                                        ToolTip="點選切換鎖定狀態，鎖定後不可修改或刪除"
+                                                        Click="ToggleLock_Click">
+                                                    <Image Width="27" Height="27"
+                                                           RenderOptions.BitmapScalingMode="HighQuality">
+                                                        <Image.Style>
+                                                            <Style TargetType="Image">
+                                                                <Setter Property="Source" Value="{StaticResource ImgLockOff}" />
+                                                                <Style.Triggers>
+                                                                    <DataTrigger Binding="{Binding Locked}" Value="True">
+                                                                        <Setter Property="Source" Value="{StaticResource ImgLockOn}" />
+                                                                    </DataTrigger>
+                                                                </Style.Triggers>
+                                                            </Style>
+                                                        </Image.Style>
+                                                    </Image>
+                                                </Button>
+                                            </DataTemplate>
+                                        </DataGridTemplateColumn.CellTemplate>
+                                    </DataGridTemplateColumn>
+
+                                    <DataGridTemplateColumn Header="選擇" Width="60"
+                                                            HeaderStyle="{StaticResource WatercolorColumnHeaderCenter}"
+                                                            CellStyle="{StaticResource WatercolorCellTight}">
+                                        <DataGridTemplateColumn.CellTemplate>
+                                            <DataTemplate>
+                                                <Button Style="{StaticResource RowIconButton}"
+                                                        Width="34" Height="34"
+                                                        ToolTip="點選切換是否參與「領取勾選」"
+                                                        Click="ToggleSelect_Click">
+                                                    <Image Width="25" Height="25"
+                                                           RenderOptions.BitmapScalingMode="HighQuality">
+                                                        <Image.Style>
+                                                            <Style TargetType="Image">
+                                                                <Setter Property="Source" Value="{StaticResource ImgSelectionOff}" />
+                                                                <Style.Triggers>
+                                                                    <DataTrigger Binding="{Binding Selected}" Value="True">
+                                                                        <Setter Property="Source" Value="{StaticResource ImgSelectionOn}" />
+                                                                    </DataTrigger>
+                                                                </Style.Triggers>
+                                                            </Style>
+                                                        </Image.Style>
+                                                    </Image>
+                                                </Button>
+                                            </DataTemplate>
+                                        </DataGridTemplateColumn.CellTemplate>
+                                    </DataGridTemplateColumn>
+
+                                    <DataGridTextColumn Header="玩家ID" Width="164"
+                                                        Binding="{Binding PlayerId}"
+                                                        ElementStyle="{StaticResource CellMono}" />
+
+                                    <DataGridTextColumn Header="備註" Width="160"
+                                                        Binding="{Binding Note}"
+                                                        ElementStyle="{StaticResource CellText}" />
+
+                                    <DataGridTemplateColumn Header="最近結果" Width="*">
+                                        <DataGridTemplateColumn.CellTemplate>
+                                            <DataTemplate>
+                                                <TextBlock Text="{Binding LastResult}"
+                                                           Style="{StaticResource ResultText}"
+                                                           ToolTip="{Binding LastResult}" />
+                                            </DataTemplate>
+                                        </DataGridTemplateColumn.CellTemplate>
+                                    </DataGridTemplateColumn>
+                                </DataGrid.Columns>
+                            </DataGrid>
+                        </Border>
+
+                        <!-- 編輯側欄：內容超出時自身滾動，視窗再小也不會被裁掉 -->
+                        <Border Grid.Column="2" Style="{StaticResource SubPanel}">
+                            <ScrollViewer VerticalScrollBarVisibility="Auto"
+                                          HorizontalScrollBarVisibility="Disabled"
+                                          Focusable="False" Padding="0,0,6,0">
+                                <StackPanel>
+                                    <StackPanel Margin="0,0,0,10">
+                                        <TextBlock Text="玩家編輯" FontSize="13.5" FontWeight="SemiBold"
+                                                   Foreground="{StaticResource InkBrush}" />
+                                        <TextBlock Style="{StaticResource CaptionText}"
+                                                   Text="選中一行後這裡會同步內容" Margin="0,2,0,0" />
+                                    </StackPanel>
+
+                                    <TextBlock Style="{StaticResource FieldLabel}" Text="玩家ID"
+                                               Margin="0,0,0,5" />
+                                    <TextBox x:Name="PlayerIdTextBox" Style="{StaticResource InputBox}"
+                                             MaxLength="32" Margin="0,0,0,10"
+                                             ToolTip="只能輸入半形數字"
+                                             TextChanged="PlayerIdTextBox_TextChanged" />
+
+                                    <TextBlock Style="{StaticResource FieldLabel}" Text="備註"
+                                               Margin="0,0,0,5" />
+                                    <TextBox x:Name="NoteTextBox" Style="{StaticResource InputBox}"
+                                             MaxLength="80" Margin="0,0,0,12"
+                                             ToolTip="自定義備註，不會提交給官方 API" />
+
+                                    <!-- 新增 / 修改 / 刪除 -->
+                                    <WrapPanel Orientation="Horizontal">
+                                        <Button x:Name="AddPlayerButton" Style="{StaticResource TileButtonChrome}"
+                                                Margin="0,0,4,4" ToolTip="把編輯區內容新增到玩家庫"
+                                                Click="AddPlayerButton_Click">
+                                            <StackPanel>
+                                                <Image Source="{StaticResource ImgButtonAdd}" Width="30" Height="30"
+                                                       RenderOptions.BitmapScalingMode="HighQuality" />
+                                                <TextBlock Style="{StaticResource TileCaption}" Text="新增" />
+                                            </StackPanel>
+                                        </Button>
+                                        <Button x:Name="UpdatePlayerButton" Style="{StaticResource TileButtonChrome}"
+                                                Margin="0,0,4,4" ToolTip="用編輯區內容覆蓋當前選中行"
+                                                Click="UpdatePlayerButton_Click">
+                                            <StackPanel>
+                                                <Image Source="{StaticResource ImgButtonEdit}" Width="30" Height="30"
+                                                       RenderOptions.BitmapScalingMode="HighQuality" />
+                                                <TextBlock Style="{StaticResource TileCaption}" Text="修改" />
+                                            </StackPanel>
+                                        </Button>
+                                        <Button x:Name="DeletePlayerButton" Style="{StaticResource TileButtonChrome}"
+                                                Margin="0,0,0,4" ToolTip="刪除當前選中行（需二次確認）"
+                                                Click="DeletePlayerButton_Click">
+                                            <StackPanel>
+                                                <Image Source="{StaticResource ImgButtonDelete}" Width="30" Height="30"
+                                                       RenderOptions.BitmapScalingMode="HighQuality" />
+                                                <TextBlock Style="{StaticResource TileCaption}" Text="刪除" />
+                                            </StackPanel>
+                                        </Button>
+                                    </WrapPanel>
+                                </StackPanel>
+                            </ScrollViewer>
+                        </Border>
+                    </Grid>
+
+                    <!-- 操作條：三個按鈕在左；右側是「文字描述 + 進度條」構成的進度塊。
+                         進度條下邊緣與按鈕下邊緣對齊；文字描述左端與進度條左端對齊。 -->
+                    <Grid Grid.Row="3" Margin="0,14,0,0">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto" />
+                            <ColumnDefinition Width="Auto" />
+                            <ColumnDefinition Width="Auto" />
+                            <ColumnDefinition Width="*" />
+                        </Grid.ColumnDefinitions>
+
+                        <Button Grid.Column="0" x:Name="RedeemSelectedButton" Content="領取勾選"
+                                Style="{StaticResource PrimaryButton}"
+                                ToolTip="只處理當前勾選的玩家"
+                                Click="RedeemSelectedButton_Click" />
+
+                        <Button Grid.Column="1" x:Name="RedeemAllButton" Content="領取全部"
+                                Style="{StaticResource PrimaryButton}" Margin="10,0,0,0"
+                                ToolTip="處理玩家庫裡的全部玩家"
+                                Click="RedeemAllButton_Click" />
+
+                        <Button Grid.Column="2" x:Name="CancelButton" Content="取消"
+                                Style="{StaticResource DangerButton}" Margin="10,0,0,0"
+                                MinWidth="86" IsEnabled="False"
+                                ToolTip="請求當前批次任務儘快停止"
+                                Click="CancelButton_Click" />
+
+                        <!-- 「文字描述 + 進度條」整體：下邊緣與按鈕下邊緣齊（平行線對齊），
+                             狀態文字左端與進度條左端齊。做法：文字行貼頂、進度條貼底（整體
+                             撐滿按鈕行的高）。文字左對齊、百分比右對齊，進度條始終佔滿整塊
+                             寬度——文字長短、數字寬窄都不會推動進度條。空讀數時兩列收起。 -->
+                        <Grid Grid.Column="3" Margin="24,0,0,0" VerticalAlignment="Stretch">
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="*" />
+                                <RowDefinition Height="Auto" />
+                            </Grid.RowDefinitions>
+
+                            <Grid Grid.Row="0" VerticalAlignment="Top">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*" />
+                                    <ColumnDefinition Width="Auto" />
+                                </Grid.ColumnDefinitions>
+
+                                <!-- 狀態文字：左端與進度條左端對齊。沒讀數時收起。 -->
+                                <TextBlock x:Name="ProgressLabel"
+                                           Style="{StaticResource CaptionText}"
+                                           VerticalAlignment="Top" TextAlignment="Left"
+                                           Margin="0,0,10,3"
+                                           Visibility="Collapsed" />
+
+                                <!-- 百分比：右端與進度條右端（卡片右邊距）對齊。 -->
+                                <TextBlock Grid.Column="1" x:Name="ProgressText"
+                                           Style="{StaticResource CaptionText}"
+                                           VerticalAlignment="Top" TextAlignment="Right"
+                                           Margin="0,0,0,3"
+                                           Visibility="Collapsed" />
+                            </Grid>
+
+                            <ProgressBar Grid.Row="1" x:Name="ProgressBar"
+                                         Style="{StaticResource WatercolorProgressBar}"
+                                         VerticalAlignment="Bottom" />
+                        </Grid>
+                    </Grid>
+                </Grid>
+            </ContentControl>
+
+            <GridSplitter Grid.Row="2" Style="{StaticResource WatercolorSplitter}"
+                          ResizeBehavior="PreviousAndNext" ResizeDirection="Rows" />
+
+            <!-- ================= 執行日誌 ================= -->
+            <ContentControl Grid.Row="3" Style="{StaticResource CardPanel}" Padding="18,12">
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="*" />
+                    </Grid.RowDefinitions>
+
+                    <Grid Grid.Row="0" Margin="0,0,0,8">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto" />
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="Auto" />
+                        </Grid.ColumnDefinitions>
+
+                        <TextBlock Grid.Column="0" Style="{StaticResource CardTitle}" Text="執行日誌"
+                                   VerticalAlignment="Center" />
+                        <TextBlock Grid.Column="1" x:Name="LogSummaryText"
+                                   Style="{StaticResource CaptionText}"
+                                   Margin="12,0,0,0" VerticalAlignment="Center" />
+
+                        <Button Grid.Column="2" x:Name="ClearLogButton" Content="清空日誌"
+                                Style="{StaticResource GhostButton}"
+                                Height="32" MinWidth="98" FontSize="12"
+                                ToolTip="清空當前會話的日誌記錄"
+                                Click="ClearLogButton_Click" />
+                    </Grid>
+
+                    <Border Grid.Row="1" Style="{StaticResource SubPanel}" Padding="10,8">
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="Auto" />
+                            </Grid.ColumnDefinitions>
+
+                            <TextBox x:Name="LogBox" Grid.Column="0" Style="{StaticResource LogBox}" />
+
+                            <!-- 隨機立繪：每次啟動隨機一張，點選可手動換一張。
+                                 內建立繪隨 exe 編譯嵌入；資料目錄 portraits 資料夾裡的圖片會併入輪換池。 -->
+                            <Border x:Name="PortraitHost" Grid.Column="1" Width="96" Height="96" CornerRadius="14"
+                                    Margin="12,0,0,0" VerticalAlignment="Center"
+                                    BorderBrush="{StaticResource CardBorderSoftBrush}" BorderThickness="1"
+                                    Background="Transparent"
+                                    ClipToBounds="True" Cursor="Hand"
+                                    ToolTip="點選隨機換一張立繪"
+                                    MouseLeftButtonUp="PortraitHost_MouseLeftButtonUp">
+                                <Image x:Name="PortraitImage" Stretch="UniformToFill"
+                                       RenderOptions.BitmapScalingMode="HighQuality">
+                                    <Image.Clip>
+                                        <!-- WPF 的 Border 即使開了 ClipToBounds 也只按矩形裁剪，圓角必須自己裁：
+                                             內沿尺寸 96−2×1＝94，半徑 14−1＝13。 -->
+                                        <RectangleGeometry Rect="0,0,94,94" RadiusX="13" RadiusY="13" />
+                                    </Image.Clip>
+                                </Image>
+                            </Border>
+                        </Grid>
+                    </Border>
+                </Grid>
+            </ContentControl>
+        </Grid>
+    </Grid>
+</Window>
